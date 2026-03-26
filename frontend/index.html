@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Facebrick FinOps</title>
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Facebrick / FinOps</p>
+      <div class="hero-headline">
+        <h1>Cost visibility from Databricks, without leaking your token to the browser.</h1>
+        <p class="hero-copy">
+          The backend syncs Jobs and Runs into a local SQLite database, applies pricing rates,
+          and serves dashboard data to this frontend through internal API endpoints.
+        </p>
+      </div>
+      <div class="hero-actions">
+        <button id="sync-button" type="button">Sync Databricks</button>
+        <label class="window-picker">
+          <span>Window</span>
+          <select id="window-days">
+            <option value="7">7 days</option>
+            <option value="30" selected>30 days</option>
+            <option value="90">90 days</option>
+          </select>
+        </label>
+      </div>
+      <p id="status-message" class="status-message">Loading dashboard data…</p>
+    </section>
+
+    <section class="grid summary-grid" id="summary-grid"></section>
+
+    <section class="grid two-up">
+      <article class="panel">
+        <div class="panel-header">
+          <h2>Cost Over Time</h2>
+          <p>Daily cost aggregation for the selected window.</p>
+        </div>
+        <div id="cost-chart" class="chart"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h2>Coverage</h2>
+          <p>How much of the stored run history can be priced with the current rate card.</p>
+        </div>
+        <div id="coverage-panel" class="coverage-panel"></div>
+      </article>
+    </section>
+
+    <section class="grid two-up">
+      <article class="panel">
+        <div class="panel-header">
+          <h2>Top Jobs</h2>
+          <p>Highest-cost jobs for the active window.</p>
+        </div>
+        <div id="top-jobs" class="table-shell"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h2>Insights</h2>
+          <p>Signals produced by the FinOps backend.</p>
+        </div>
+        <div id="insights" class="insight-list"></div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Recent Costed Runs</h2>
+        <p>Recent executions with estimated cost attribution.</p>
+      </div>
+      <div id="recent-runs" class="table-shell"></div>
+    </section>
+  </main>
+  <script src="/assets/app.js"></script>
+</body>
+</html>

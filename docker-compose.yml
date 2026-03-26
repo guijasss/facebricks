@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: facebrick
+      POSTGRES_USER: facebrick
+      POSTGRES_PASSWORD: facebrick
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U facebrick -d facebrick"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    environment:
+      FACEBRICK_DATABASE_URL: postgresql://facebrick:facebrick@db:5432/facebrick
+      FACEBRICK_PRICING_FILE: /app/config/pricing.example.json
+      FACEBRICK_BIND: 0.0.0.0
+      FACEBRICK_PORT: 8000
+      DATABRICKS_HOST: ${DATABRICKS_HOST:-}
+      DATABRICKS_TOKEN: ${DATABRICKS_TOKEN:-}
+      FACEBRICK_ALLOWED_ORIGINS: ${FACEBRICK_ALLOWED_ORIGINS:-}
+      FACEBRICK_BASIC_AUTH_USER: ${FACEBRICK_BASIC_AUTH_USER:-}
+      FACEBRICK_BASIC_AUTH_PASSWORD: ${FACEBRICK_BASIC_AUTH_PASSWORD:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  postgres_data:

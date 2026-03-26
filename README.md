@@ -1,5 +1,8 @@
 # 🧠 Databricks Intelligence Layer — Product Roadmap
 
+Detalhes técnicos, arquitetura local, segurança operacional e endpoints da API
+estão em `docs/architecture.md`.
+
 ## 🎯 Visão
 
 Construir uma camada de inteligência sobre o Databricks que transforme dados operacionais (jobs, custos, logs e lineage) em **insights acionáveis**, cobrindo:
