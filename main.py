@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.app import AppConfig, run_server
+from src.app.config import AppConfig
+from src.app.http import run_server
 
 
 def main() -> None:

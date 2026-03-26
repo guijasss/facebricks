@@ -6,7 +6,7 @@ This repository now includes a local `front-back-db` implementation for the
 FinOps module:
 
 * `frontend/` is a browser dashboard that only talks to backend API endpoints.
-* `src/app/` is the backend HTTP server, Databricks client, Postgres
+* `src/app/` is the FastAPI backend, Databricks client, Postgres
   persistence, and FinOps API layer.
 * `docker-compose.yml` runs dedicated `frontend`, `backend`, and `db`
   containers.
