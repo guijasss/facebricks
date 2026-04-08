@@ -18,20 +18,34 @@ services:
       context: .
       dockerfile: docker/backend.Dockerfile
     environment:
-      FACEBRICK_DATABASE_URL: postgresql://facebrick:facebrick@db:5432/facebrick
-      FACEBRICK_PRICING_FILE: /app/config/pricing.example.json
-      FACEBRICK_BIND: 0.0.0.0
-      FACEBRICK_PORT: 8000
-      DATABRICKS_HOST: ${DATABRICKS_HOST:-}
-      DATABRICKS_TOKEN: ${DATABRICKS_TOKEN:-}
+      FACEBRICK_CONFIG_FILE: /app/config/facebrick.config.json
       FACEBRICK_ALLOWED_ORIGINS: ${FACEBRICK_ALLOWED_ORIGINS:-}
       FACEBRICK_BASIC_AUTH_USER: ${FACEBRICK_BASIC_AUTH_USER:-}
       FACEBRICK_BASIC_AUTH_PASSWORD: ${FACEBRICK_BASIC_AUTH_PASSWORD:-}
+    command:
+      - python
+      - -m
+      - uvicorn
+      - main:build_app
+      - --factory
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --reload
+      - --reload-dir
+      - /app/src
+      - --reload-dir
+      - /app/config
+      - --reload-dir
+      - /app
     depends_on:
       db:
         condition: service_healthy
     expose:
       - "8000"
+    volumes:
+      - ./:/app
 
   frontend:
     build:

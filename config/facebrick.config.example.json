@@ -1,0 +1,10 @@
+{
+  "database_url": "postgresql://facebrick:facebrick@db:5432/facebrick",
+  "bind_host": "0.0.0.0",
+  "port": 8000,
+  "databricks": {
+    "host": "",
+    "token": "",
+    "sql_warehouse_id": ""
+  }
+}

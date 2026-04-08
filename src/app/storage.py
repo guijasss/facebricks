@@ -365,15 +365,41 @@ def _job_to_json(job: Job) -> dict[str, object]:
             }
             for task in job.tasks
         ],
+        "job_clusters": None
+        if job.job_clusters is None
+        else [
+            {
+                "job_cluster_key": cluster.job_cluster_key,
+                "new_cluster": _cluster_spec_to_json(cluster.new_cluster),
+            }
+            for cluster in job.job_clusters
+        ],
     }
 
 
 def _job_from_json(payload: dict[str, object]) -> Job:
     from src.entities import JobTask
     from src.entities.job import Schedule
+    from src.entities.job_cluster_spec import JobClusterSpec
 
     raw_schedule = payload.get("schedule")
     raw_tasks = payload.get("tasks")
+    raw_job_clusters = payload.get("job_clusters")
+    parsed_job_clusters = None
+    if isinstance(raw_job_clusters, list):
+        parsed_job_clusters = []
+        for cluster in raw_job_clusters:
+            if not isinstance(cluster, dict) or cluster.get("job_cluster_key") is None:
+                continue
+            new_cluster = _cluster_spec_from_json(cluster.get("new_cluster"))
+            if new_cluster is None:
+                continue
+            parsed_job_clusters.append(
+                JobClusterSpec(
+                    job_cluster_key=str(cluster["job_cluster_key"]),
+                    new_cluster=new_cluster,
+                )
+            )
     return Job(
         job_id=int(payload["job_id"]),
         name=str(payload["name"]),
@@ -398,6 +424,7 @@ def _job_from_json(payload: dict[str, object]) -> Job:
         ]
         if isinstance(raw_tasks, list)
         else None,
+        job_clusters=parsed_job_clusters,
     )
 
 

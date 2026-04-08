@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-from .job_cluster_spec import JobClusterSpec
-from .job_task import JobTask
+from src.entities.job_cluster_spec import JobClusterSpec
+from src.entities.job_task import JobTask
 
 
 @dataclass(frozen=True)

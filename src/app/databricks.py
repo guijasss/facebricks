@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -13,6 +14,7 @@ from src.entities import (
     ClusterInstance,
     ClusterSpec,
     Job,
+    JobClusterSpec,
     JobTask,
     Run,
     RunState,
@@ -87,15 +89,77 @@ class DatabricksClient:
             clusters.append(_parse_cluster(payload))
         return clusters
 
+    def list_distinct_cluster_node_types(self, warehouse_id: str) -> List[str]:
+        payload = self._post_json(
+            "/api/2.0/sql/statements/",
+            {
+                "warehouse_id": warehouse_id,
+                "statement": (
+                    "SELECT DISTINCT node_type "
+                    "FROM ("
+                    "  SELECT driver_node_type AS node_type "
+                    "  FROM system.compute.clusters "
+                    "  WHERE driver_node_type IS NOT NULL "
+                    "  UNION "
+                    "  SELECT worker_node_type AS node_type "
+                    "  FROM system.compute.clusters "
+                    "  WHERE worker_node_type IS NOT NULL"
+                    ") cluster_nodes "
+                    "ORDER BY node_type"
+                ),
+                "wait_timeout": "30s",
+            },
+        )
+        statement_id = _string_or_none(payload.get("statement_id"))
+        if statement_id is None:
+            raise DatabricksClientError(
+                "Databricks SQL statement execution did not return a statement_id."
+            )
+
+        status = payload.get("status")
+        state = _statement_state(status)
+        while state in {"PENDING", "RUNNING"}:
+            time.sleep(0.5)
+            payload = self._get_json(f"/api/2.0/sql/statements/{statement_id}")
+            state = _statement_state(payload.get("status"))
+
+        if state != "SUCCEEDED":
+            raise DatabricksClientError(
+                f"Databricks SQL statement failed with state '{state or 'UNKNOWN'}'."
+            )
+
+        rows = _statement_rows(payload)
+        node_types = sorted(
+            {
+                str(row.get("node_type")).strip()
+                for row in rows
+                if row.get("node_type") is not None and str(row.get("node_type")).strip()
+            }
+        )
+        return node_types
+
     def _get_json(self, path: str, params: Optional[Dict[str, object]] = None) -> Dict[str, object]:
+        return self._request_json("GET", path, params=params)
+
+    def _post_json(self, path: str, payload: Dict[str, object]) -> Dict[str, object]:
+        return self._request_json("POST", path, body=payload)
+
+    def _request_json(
+        self,
+        method: str,
+        path: str,
+        params: Optional[Dict[str, object]] = None,
+        body: Optional[Dict[str, object]] = None,
+    ) -> Dict[str, object]:
         query = f"?{urlencode(params)}" if params else ""
         request = Request(
             f"{self._credentials.host}{path}{query}",
+            data=json.dumps(body).encode("utf-8") if body is not None else None,
             headers={
                 "Authorization": f"Bearer {self._credentials.token}",
                 "Content-Type": "application/json",
             },
-            method="GET",
+            method=method,
         )
         try:
             with urlopen(request, timeout=self._timeout_seconds) as response:
@@ -114,6 +178,14 @@ def _parse_job(raw_job: Dict[str, object]) -> Job:
     raw_schedule = settings.get("schedule") if isinstance(settings, dict) else {}
     tasks = settings.get("tasks") if isinstance(settings, dict) else None
     job_clusters = settings.get("job_clusters") if isinstance(settings, dict) else None
+    parsed_job_clusters: Optional[List[JobClusterSpec]] = None
+    if isinstance(job_clusters, list):
+        parsed_job_clusters = []
+        for job_cluster in job_clusters:
+            parsed_job_cluster = _parse_job_cluster_spec(job_cluster)
+            if parsed_job_cluster is not None:
+                parsed_job_clusters.append(parsed_job_cluster)
+
     return Job(
         job_id=int(raw_job["job_id"]),
         name=str(settings.get("name") or raw_job.get("job_id")),
@@ -129,7 +201,7 @@ def _parse_job(raw_job: Dict[str, object]) -> Job:
         else None,
         max_concurrent_runs=_int_or_none(settings.get("max_concurrent_runs")),
         tasks=[_parse_job_task(task) for task in tasks] if isinstance(tasks, list) else None,
-        job_clusters=None if not isinstance(job_clusters, list) else [],
+        job_clusters=parsed_job_clusters,
     )
 
 
@@ -150,6 +222,18 @@ def _parse_job_task(raw_task: object) -> JobTask:
         notebook_path=notebook_path,
         cluster_ref=cluster_ref,
     )
+
+
+def _parse_job_cluster_spec(raw_job_cluster: object) -> Optional[JobClusterSpec]:
+    if not isinstance(raw_job_cluster, dict):
+        return None
+
+    new_cluster = _parse_cluster_spec(raw_job_cluster.get("new_cluster"))
+    job_cluster_key = _string_or_none(raw_job_cluster.get("job_cluster_key"))
+    if job_cluster_key is None or new_cluster is None:
+        return None
+
+    return JobClusterSpec(job_cluster_key=job_cluster_key, new_cluster=new_cluster)
 
 
 def _parse_run(raw_run: Dict[str, object]) -> Run:
@@ -246,3 +330,40 @@ def _int_or_none(value: object) -> Optional[int]:
     if value is None:
         return None
     return int(value)
+
+
+def _statement_state(value: object) -> Optional[str]:
+    if not isinstance(value, dict):
+        return None
+    return _string_or_none(value.get("state"))
+
+
+def _statement_rows(payload: Dict[str, object]) -> List[Dict[str, Any]]:
+    result = payload.get("result")
+    manifest = payload.get("manifest")
+    if not isinstance(result, dict) or not isinstance(manifest, dict):
+        return []
+
+    raw_rows = result.get("data_array")
+    schema = manifest.get("schema")
+    if not isinstance(raw_rows, list) or not isinstance(schema, dict):
+        return []
+
+    raw_columns = schema.get("columns")
+    if not isinstance(raw_columns, list):
+        return []
+
+    columns = [
+        str(column.get("name"))
+        for column in raw_columns
+        if isinstance(column, dict) and column.get("name") is not None
+    ]
+    rows: List[Dict[str, Any]] = []
+    for raw_row in raw_rows:
+        if not isinstance(raw_row, list):
+            continue
+        row: Dict[str, Any] = {}
+        for index, column_name in enumerate(columns):
+            row[column_name] = raw_row[index] if index < len(raw_row) else None
+        rows.append(row)
+    return rows

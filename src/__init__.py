@@ -1,4 +1,4 @@
-from .finops import (
+from src.finops import (
     CostInsight,
     FinOpsAnalyzer,
     FinOpsConfig,

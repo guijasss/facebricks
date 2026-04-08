@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .cluster_spec import ClusterSpec
+from src.entities.cluster_spec import ClusterSpec
 
 
 @dataclass(frozen=True)

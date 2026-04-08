@@ -1,0 +1,371 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.app { display: flex; height: 600px; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; background: var(--color-background-primary); }
+.sidebar { width: 220px; min-width: 220px; background: var(--color-background-secondary); border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; padding: 1rem 0; }
+.logo { padding: 0 1rem 1.25rem; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 0.75rem; }
+.logo-mark { font-size: 15px; font-weight: 500; color: var(--color-text-primary); letter-spacing: -0.3px; }
+.logo-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+.nav-section { padding: 0 0.75rem; margin-bottom: 0.25rem; }
+.nav-label { font-size: 10px; font-weight: 500; color: var(--color-text-tertiary); letter-spacing: 0.6px; text-transform: uppercase; padding: 0 0.5rem; margin-bottom: 4px; }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: var(--border-radius-md); cursor: pointer; font-size: 13px; color: var(--color-text-secondary); transition: background 0.1s; user-select: none; }
+.nav-item:hover { background: var(--color-background-primary); color: var(--color-text-primary); }
+.nav-item.active { background: var(--color-background-primary); color: var(--color-text-primary); font-weight: 500; border: 0.5px solid var(--color-border-secondary); }
+.nav-icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
+.nav-item.active .nav-icon { opacity: 1; }
+.badge { margin-left: auto; font-size: 10px; padding: 2px 6px; border-radius: 999px; font-weight: 500; }
+.badge-warn { background: #FAEEDA; color: #854F0B; }
+.badge-danger { background: #FCEBEB; color: #A32D2D; }
+.badge-info { background: #E6F1FB; color: #185FA5; }
+.content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.topbar { padding: 0.875rem 1.25rem; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; justify-content: space-between; }
+.page-title { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+.pill { font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 0.5px solid var(--color-border-secondary); color: var(--color-text-secondary); cursor: pointer; background: transparent; }
+.pill.active { background: var(--color-background-secondary); color: var(--color-text-primary); }
+.sync-btn { font-size: 12px; padding: 5px 12px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-primary); cursor: pointer; font-weight: 500; }
+.panel { flex: 1; overflow-y: auto; padding: 1.25rem; display: none; }
+.panel.active { display: block; }
+.metrics-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
+.metric-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.875rem 1rem; }
+.metric-label { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 4px; }
+.metric-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+.metric-delta { font-size: 11px; margin-top: 3px; }
+.delta-up { color: #A32D2D; }
+.delta-down { color: #3B6D11; }
+.section-title { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 10px; letter-spacing: 0.2px; }
+.table-wrap { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); overflow: hidden; margin-bottom: 1.25rem; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { font-size: 10px; font-weight: 500; color: var(--color-text-tertiary); text-align: left; padding: 8px 12px; border-bottom: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); letter-spacing: 0.4px; text-transform: uppercase; }
+td { padding: 9px 12px; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--color-background-secondary); }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.dot-green { background: #639922; }
+.dot-red { background: #E24B4A; }
+.dot-amber { background: #BA7517; }
+.insight-list { display: flex; flex-direction: column; gap: 8px; }
+.insight-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start; }
+.insight-icon { width: 28px; height: 28px; border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+.ic-warn { background: #FAEEDA; }
+.ic-danger { background: #FCEBEB; }
+.ic-info { background: #E6F1FB; }
+.ic-teal { background: #E1F5EE; }
+.insight-body { flex: 1; }
+.insight-title { font-size: 12px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 2px; }
+.insight-desc { font-size: 11px; color: var(--color-text-secondary); line-height: 1.5; }
+.insight-tag { font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 500; margin-top: 5px; display: inline-block; }
+.tag-finops { background: #EEEDFE; color: #534AB7; }
+.tag-job { background: #E6F1FB; color: #185FA5; }
+.tag-fresh { background: #E1F5EE; color: #0F6E56; }
+.tag-alert { background: #FCEBEB; color: #A32D2D; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.bar-list { display: flex; flex-direction: column; gap: 8px; }
+.bar-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.bar-name { min-width: 120px; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { flex: 1; height: 6px; background: var(--color-background-secondary); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; }
+.bar-val { min-width: 42px; text-align: right; color: var(--color-text-primary); font-weight: 500; }
+.alert-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 10px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.alert-sev { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.alert-info-block { flex: 1; }
+.alert-name { font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
+.alert-meta { font-size: 11px; color: var(--color-text-secondary); margin-top: 1px; }
+.alert-time { font-size: 11px; color: var(--color-text-tertiary); white-space: nowrap; }
+</style>
+
+<h2 class="sr-only">Facebrick – Databricks intelligence dashboard prototype with sidebar navigation covering FinOps, Job Observability, Data Freshness, and Alerts.</h2>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">Facebrick</div>
+      <div class="logo-sub">Databricks intelligence</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active" onclick="switchTab('overview', this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="currentColor" opacity="0.8"/><rect x="9" y="2" width="5" height="5" rx="1" fill="currentColor" opacity="0.5"/><rect x="2" y="9" width="5" height="5" rx="1" fill="currentColor" opacity="0.5"/><rect x="9" y="9" width="5" height="5" rx="1" fill="currentColor" opacity="0.5"/></svg>
+        Dashboard
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Modules</div>
+      <div class="nav-item" onclick="switchTab('finops', this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M8 1.5C4.41 1.5 1.5 4.41 1.5 8S4.41 14.5 8 14.5 14.5 11.59 14.5 8 11.59 1.5 8 1.5z" stroke="currentColor" stroke-width="1.2"/><path d="M8 4v8M6 6.5h2.5a1 1 0 010 2h-1a1 1 0 000 2H10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        FinOps
+      </div>
+      <div class="nav-item" onclick="switchTab('jobs', this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v4l2.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Job observability
+        <span class="badge badge-danger">3</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('freshness', this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M3 8a5 5 0 1010 0A5 5 0 003 8z" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Data freshness
+        <span class="badge badge-warn">2</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('alerts', this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 4h4l-3.2 2.4 1.2 4L8 10l-3.5 2.4 1.2-4L2.5 6h4L8 2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+        Alerts
+        <span class="badge badge-danger">5</span>
+      </div>
+    </div>
+
+    <div style="margin-top: auto; padding: 0 0.75rem;">
+      <div style="font-size: 11px; color: var(--color-text-tertiary); padding: 0 0.5rem;">Last sync</div>
+      <div style="font-size: 11px; color: var(--color-text-secondary); padding: 0 0.5rem; margin-top: 2px;">2 hours ago</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="topbar">
+      <span class="page-title" id="page-title">Dashboard</span>
+      <div class="topbar-actions">
+        <button class="pill active" onclick="setWindow(7, this)">7d</button>
+        <button class="pill" onclick="setWindow(14, this)">14d</button>
+        <button class="pill" onclick="setWindow(30, this)">30d</button>
+        <button class="sync-btn">↻ Sync</button>
+      </div>
+    </div>
+
+    <div class="panel active" id="panel-overview">
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-label">Total compute cost</div>
+          <div class="metric-value">$4,820</div>
+          <div class="metric-delta delta-up">↑ 12% vs prev period</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Active jobs</div>
+          <div class="metric-value">38</div>
+          <div class="metric-delta" style="color: var(--color-text-tertiary);">stable</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Fleet failure rate</div>
+          <div class="metric-value">8.4%</div>
+          <div class="metric-delta delta-up">↑ 2.1pp</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Stale tables</div>
+          <div class="metric-value">2</div>
+          <div class="metric-delta delta-up">↑ 2 new</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="section-title">Top cost drivers</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Job</th><th>Cost</th><th>Share</th></tr></thead>
+              <tbody>
+                <tr><td>nightly_feature_pipeline</td><td>$1,240</td><td>25.7%</td></tr>
+                <tr><td>ml_training_weekly</td><td>$980</td><td>20.3%</td></tr>
+                <tr><td>dbt_prod_refresh</td><td>$620</td><td>12.9%</td></tr>
+                <tr><td>reporting_aggregation</td><td>$440</td><td>9.1%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <div class="section-title">Recent insights</div>
+          <div class="insight-list">
+            <div class="insight-card">
+              <div class="insight-icon ic-warn">⚠</div>
+              <div class="insight-body">
+                <div class="insight-title">ml_training_weekly is getting slower</div>
+                <div class="insight-desc">Avg runtime up 38% over 14 days.</div>
+                <span class="insight-tag tag-job">Jobs</span>
+              </div>
+            </div>
+            <div class="insight-card">
+              <div class="insight-icon ic-teal">↑</div>
+              <div class="insight-body">
+                <div class="insight-title">nightly_feature_pipeline is 25.7% of cost</div>
+                <div class="insight-desc">Highest single contributor this window.</div>
+                <span class="insight-tag tag-finops">FinOps</span>
+              </div>
+            </div>
+            <div class="insight-card">
+              <div class="insight-icon ic-danger">!</div>
+              <div class="insight-body">
+                <div class="insight-title">prod.orders missed freshness SLA</div>
+                <div class="insight-desc">Last update 29h ago, SLA is 6h.</div>
+                <span class="insight-tag tag-fresh">Freshness</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-finops">
+      <div class="metrics-row">
+        <div class="metric-card"><div class="metric-label">Total spend</div><div class="metric-value">$4,820</div></div>
+        <div class="metric-card"><div class="metric-label">Cost per run (avg)</div><div class="metric-value">$12.60</div></div>
+        <div class="metric-card"><div class="metric-label">Most expensive job</div><div class="metric-value" style="font-size: 13px; padding-top: 4px;">nightly_feature</div></div>
+        <div class="metric-card"><div class="metric-label">DBUs consumed</div><div class="metric-value">18,420</div></div>
+      </div>
+      <div class="two-col">
+        <div>
+          <div class="section-title">Cost by job</div>
+          <div class="bar-list">
+            <div class="bar-item"><span class="bar-name">nightly_feature_pipeline</span><div class="bar-track"><div class="bar-fill" style="width:100%; background:#534AB7;"></div></div><span class="bar-val">$1,240</span></div>
+            <div class="bar-item"><span class="bar-name">ml_training_weekly</span><div class="bar-track"><div class="bar-fill" style="width:79%; background:#534AB7;"></div></div><span class="bar-val">$980</span></div>
+            <div class="bar-item"><span class="bar-name">dbt_prod_refresh</span><div class="bar-track"><div class="bar-fill" style="width:50%; background:#534AB7;"></div></div><span class="bar-val">$620</span></div>
+            <div class="bar-item"><span class="bar-name">reporting_aggregation</span><div class="bar-track"><div class="bar-fill" style="width:35%; background:#534AB7;"></div></div><span class="bar-val">$440</span></div>
+            <div class="bar-item"><span class="bar-name">user_events_hourly</span><div class="bar-track"><div class="bar-fill" style="width:20%; background:#534AB7;"></div></div><span class="bar-val">$260</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="section-title">Cost insights</div>
+          <div class="insight-list">
+            <div class="insight-card"><div class="insight-icon ic-warn">↑</div><div class="insight-body"><div class="insight-title">nightly_feature_pipeline = 25.7% of total cost</div><div class="insight-desc">Largest single driver in the window.</div></div></div>
+            <div class="insight-card"><div class="insight-icon ic-info">≈</div><div class="insight-body"><div class="insight-title">ml_training_weekly costs $140/day to maintain</div><div class="insight-desc">Based on 7-run average this period.</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-jobs">
+      <div class="metrics-row">
+        <div class="metric-card"><div class="metric-label">Fleet failure rate</div><div class="metric-value">8.4%</div><div class="metric-delta delta-up">↑ 2.1pp</div></div>
+        <div class="metric-card"><div class="metric-label">Jobs with degradation</div><div class="metric-value">3</div></div>
+        <div class="metric-card"><div class="metric-label">Orphan jobs</div><div class="metric-value">4</div></div>
+        <div class="metric-card"><div class="metric-label">Total runs</div><div class="metric-value">383</div></div>
+      </div>
+      <div class="section-title">Job health</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Job</th><th>Runs</th><th>Failure rate</th><th>Avg runtime</th><th>Trend</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>nightly_feature_pipeline</td><td>28</td><td>3.6%</td><td>42 min</td><td style="color:#3B6D11;">stable</td>
+              <td><span class="status-dot dot-green"></span>healthy</td>
+            </tr>
+            <tr>
+              <td>ml_training_weekly</td><td>7</td><td>14.3%</td><td>2h 18m</td><td style="color:#A32D2D;">↑ +38%</td>
+              <td><span class="status-dot dot-amber"></span>degrading</td>
+            </tr>
+            <tr>
+              <td>reporting_aggregation</td><td>56</td><td>19.6%</td><td>8 min</td><td style="color:#A32D2D;">unstable</td>
+              <td><span class="status-dot dot-red"></span>failing</td>
+            </tr>
+            <tr>
+              <td>dbt_prod_refresh</td><td>28</td><td>0%</td><td>31 min</td><td style="color:#3B6D11;">stable</td>
+              <td><span class="status-dot dot-green"></span>healthy</td>
+            </tr>
+            <tr>
+              <td>user_events_hourly</td><td>168</td><td>1.2%</td><td>4 min</td><td style="color:#3B6D11;">stable</td>
+              <td><span class="status-dot dot-green"></span>healthy</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-freshness">
+      <div class="metrics-row">
+        <div class="metric-card"><div class="metric-label">Tables monitored</div><div class="metric-value">14</div></div>
+        <div class="metric-card"><div class="metric-label">SLA breaches</div><div class="metric-value">2</div><div class="metric-delta delta-up">active</div></div>
+        <div class="metric-card"><div class="metric-label">Volume anomalies</div><div class="metric-value">1</div></div>
+        <div class="metric-card"><div class="metric-label">Schema changes</div><div class="metric-value">0</div><div class="metric-delta delta-down">clean</div></div>
+      </div>
+      <div class="section-title">Table health</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Table</th><th>Last updated</th><th>SLA</th><th>Volume</th><th>Issue</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>prod.orders</td><td>29h ago</td><td>6h</td><td>normal</td>
+              <td><span class="status-dot dot-red"></span>stale — missed SLA by 23h</td>
+            </tr>
+            <tr>
+              <td>prod.user_sessions</td><td>13h ago</td><td>12h</td><td style="color:#A32D2D;">↓ –80%</td>
+              <td><span class="status-dot dot-amber"></span>volume anomaly</td>
+            </tr>
+            <tr>
+              <td>prod.inventory</td><td>4h ago</td><td>6h</td><td>normal</td>
+              <td><span class="status-dot dot-green"></span>ok</td>
+            </tr>
+            <tr>
+              <td>analytics.revenue_daily</td><td>1h ago</td><td>24h</td><td>normal</td>
+              <td><span class="status-dot dot-green"></span>ok</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-alerts">
+      <div class="metrics-row">
+        <div class="metric-card"><div class="metric-label">Active alerts</div><div class="metric-value">5</div></div>
+        <div class="metric-card"><div class="metric-label">Critical</div><div class="metric-value" style="color:#A32D2D;">2</div></div>
+        <div class="metric-card"><div class="metric-label">Warning</div><div class="metric-value" style="color:#BA7517;">3</div></div>
+        <div class="metric-card"><div class="metric-label">Resolved today</div><div class="metric-value" style="color:#3B6D11;">4</div></div>
+      </div>
+      <div class="section-title">Active alerts</div>
+
+      <div class="alert-card">
+        <div class="alert-sev" style="background:#E24B4A;"></div>
+        <div class="alert-info-block">
+          <div class="alert-name">prod.orders missed freshness SLA</div>
+          <div class="alert-meta">Table stale for 29h · threshold: 6h · category: freshness</div>
+        </div>
+        <div class="alert-time">2h ago</div>
+      </div>
+      <div class="alert-card">
+        <div class="alert-sev" style="background:#E24B4A;"></div>
+        <div class="alert-info-block">
+          <div class="alert-name">reporting_aggregation failure rate above threshold</div>
+          <div class="alert-meta">19.6% failure rate · threshold: 10% · category: reliability</div>
+        </div>
+        <div class="alert-time">4h ago</div>
+      </div>
+      <div class="alert-card">
+        <div class="alert-sev" style="background:#BA7517;"></div>
+        <div class="alert-info-block">
+          <div class="alert-name">ml_training_weekly runtime degradation</div>
+          <div class="alert-meta">Avg runtime up 38% · category: performance</div>
+        </div>
+        <div class="alert-time">6h ago</div>
+      </div>
+      <div class="alert-card">
+        <div class="alert-sev" style="background:#BA7517;"></div>
+        <div class="alert-info-block">
+          <div class="alert-name">prod.user_sessions volume anomaly</div>
+          <div class="alert-meta">Volume dropped 80% below baseline · category: freshness</div>
+        </div>
+        <div class="alert-time">8h ago</div>
+      </div>
+      <div class="alert-card">
+        <div class="alert-sev" style="background:#BA7517;"></div>
+        <div class="alert-info-block">
+          <div class="alert-name">nightly_feature_pipeline cost spike</div>
+          <div class="alert-meta">$1,240 this period · 25.7% of total spend · category: cost</div>
+        </div>
+        <div class="alert-time">12h ago</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const titles = { overview: 'Dashboard', finops: 'FinOps', jobs: 'Job observability', freshness: 'Data freshness', alerts: 'Alerts' };
+function switchTab(id, el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.getElementById('page-title').textContent = titles[id];
+}
+function setWindow(days, el) {
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+}
+</script>

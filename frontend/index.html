@@ -3,80 +3,173 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Facebrick FinOps</title>
-  <link rel="stylesheet" href="/assets/styles.css" />
+  <title>Facebrick</title>
+  <link rel="stylesheet" href="/assets/styles.css?v=20260408b" />
 </head>
 <body>
-  <main class="shell">
-    <section class="hero">
-      <p class="eyebrow">Facebrick / FinOps</p>
-      <div class="hero-headline">
-        <h1>Cost visibility from Databricks, without leaking your token to the browser.</h1>
-        <p class="hero-copy">
-          The backend syncs Jobs and Runs into a local SQLite database, applies pricing rates,
-          and serves dashboard data to this frontend through internal API endpoints.
-        </p>
-      </div>
-      <div class="hero-actions">
-        <button id="sync-button" type="button">Sync Databricks</button>
-        <label class="window-picker">
-          <span>Window</span>
-          <select id="window-days">
-            <option value="7">7 days</option>
-            <option value="30" selected>30 days</option>
-            <option value="90">90 days</option>
-          </select>
-        </label>
-      </div>
-      <p id="status-message" class="status-message">Loading dashboard data…</p>
-    </section>
-
-    <section class="grid summary-grid" id="summary-grid"></section>
-
-    <section class="grid two-up">
-      <article class="panel">
-        <div class="panel-header">
-          <h2>Cost Over Time</h2>
-          <p>Daily cost aggregation for the selected window.</p>
+  <h1 class="sr-only">Facebrick Databricks intelligence dashboard</h1>
+  <main class="app-shell">
+    <section class="app">
+      <aside class="sidebar">
+        <div class="logo">
+          <div class="logo-mark">Facebrick</div>
+          <div class="logo-sub">Databricks intelligence</div>
         </div>
-        <div id="cost-chart" class="chart"></div>
-      </article>
 
-      <article class="panel">
-        <div class="panel-header">
-          <h2>Coverage</h2>
-          <p>How much of the stored run history can be priced with the current rate card.</p>
+        <div class="nav-section">
+          <div class="nav-label">Overview</div>
+          <button class="nav-item active" data-panel="overview" type="button">
+            <span class="nav-icon">◫</span>
+            <span>Dashboard</span>
+          </button>
         </div>
-        <div id="coverage-panel" class="coverage-panel"></div>
-      </article>
-    </section>
 
-    <section class="grid two-up">
-      <article class="panel">
-        <div class="panel-header">
-          <h2>Top Jobs</h2>
-          <p>Highest-cost jobs for the active window.</p>
+        <div class="nav-section">
+          <div class="nav-label">Modules</div>
+          <button class="nav-item" data-panel="finops" type="button">
+            <span class="nav-icon">$</span>
+            <span>FinOps</span>
+          </button>
+          <button class="nav-item" data-panel="config" type="button">
+            <span class="nav-icon">≡</span>
+            <span>Config</span>
+          </button>
+          <button class="nav-item" data-panel="jobs" type="button">
+            <span class="nav-icon">◷</span>
+            <span>Job observability</span>
+            <span class="badge badge-info">Soon</span>
+          </button>
+          <button class="nav-item" data-panel="freshness" type="button">
+            <span class="nav-icon">◌</span>
+            <span>Data freshness</span>
+            <span class="badge badge-warn">Soon</span>
+          </button>
+          <button class="nav-item" data-panel="alerts" type="button">
+            <span class="nav-icon">!</span>
+            <span>Alerts</span>
+            <span class="badge badge-danger">Soon</span>
+          </button>
         </div>
-        <div id="top-jobs" class="table-shell"></div>
-      </article>
 
-      <article class="panel">
-        <div class="panel-header">
-          <h2>Insights</h2>
-          <p>Signals produced by the FinOps backend.</p>
+        <div class="sidebar-footer">
+          <div class="nav-label">Last sync</div>
+          <p id="sidebar-sync" class="sidebar-sync">Waiting for first sync</p>
         </div>
-        <div id="insights" class="insight-list"></div>
-      </article>
-    </section>
+      </aside>
 
-    <section class="panel">
-      <div class="panel-header">
-        <h2>Recent Costed Runs</h2>
-        <p>Recent executions with estimated cost attribution.</p>
-      </div>
-      <div id="recent-runs" class="table-shell"></div>
+      <section class="content">
+        <header class="topbar">
+          <div>
+            <h2 id="page-title" class="page-title">Dashboard</h2>
+            <p id="status-message" class="status-message">Loading dashboard data…</p>
+          </div>
+          <div class="topbar-actions">
+            <div class="pill-group" role="group" aria-label="Window selection">
+              <button class="pill" data-window="7" type="button">7d</button>
+              <button class="pill" data-window="14" type="button">14d</button>
+              <button class="pill active" data-window="30" type="button">30d</button>
+              <button class="pill" data-window="90" type="button">90d</button>
+            </div>
+            <button id="sync-button" class="sync-btn" type="button">Sync</button>
+          </div>
+        </header>
+
+        <section class="panel active" id="panel-overview">
+          <div id="overview-metrics" class="metrics-row"></div>
+          <div class="two-col">
+            <div>
+              <div class="section-title">Top cost drivers</div>
+              <div id="overview-top-jobs" class="table-wrap"></div>
+            </div>
+            <div>
+              <div class="section-title">Recent insights</div>
+              <div id="overview-insights" class="insight-list"></div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div>
+              <div class="section-title">Cost over time</div>
+              <div id="overview-cost-chart" class="chart-card"></div>
+            </div>
+            <div>
+              <div class="section-title">Coverage</div>
+              <div id="overview-coverage" class="coverage-panel"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="panel-finops">
+          <div id="finops-metrics" class="metrics-row"></div>
+          <div class="two-col">
+            <div>
+              <div class="section-title">Cost by job</div>
+              <div id="finops-jobs" class="bar-list"></div>
+            </div>
+            <div>
+              <div class="section-title">Cost insights</div>
+              <div id="finops-insights" class="insight-list"></div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div>
+              <div class="section-title">Cost by pipeline</div>
+              <div id="finops-pipelines" class="table-wrap"></div>
+            </div>
+            <div>
+              <div class="section-title">Maintained datasets</div>
+              <div id="finops-tables" class="table-wrap"></div>
+            </div>
+          </div>
+          <div>
+            <div class="section-title">Recent costed runs</div>
+            <div id="finops-runs" class="table-wrap"></div>
+          </div>
+        </section>
+
+        <section class="panel" id="panel-config">
+          <div class="config-header-card">
+            <div>
+              <div class="section-title">Cluster Pricing</div>
+              <p class="config-copy">
+                Refresh distinct driver and worker node types from <code>system.compute.clusters</code>, then set DBUs and plan per node type.
+              </p>
+              <p class="config-copy subtle">
+                Current cost analysis uses Jobs pricing: premium = $0.15/DBU, enterprise = $0.20/DBU. All-purpose reference rates are shown in the table.
+              </p>
+            </div>
+            <div class="config-actions">
+              <button id="refresh-config-button" class="pill" type="button">Refresh cluster types</button>
+              <button id="save-config-button" class="sync-btn" type="button">Save pricing</button>
+            </div>
+          </div>
+          <div id="config-summary" class="coverage-panel"></div>
+          <div class="section-title">Node types</div>
+          <div id="config-table" class="table-wrap"></div>
+        </section>
+
+        <section class="panel" id="panel-jobs">
+          <div class="placeholder-card">
+            <h3>Job observability UI scaffolded</h3>
+            <p>This screen matches the prototype layout, but the backend domain is not implemented in this repo yet.</p>
+          </div>
+        </section>
+
+        <section class="panel" id="panel-freshness">
+          <div class="placeholder-card">
+            <h3>Data freshness UI scaffolded</h3>
+            <p>This screen is ready for freshness metrics and maintained-dataset quality signals once those APIs exist.</p>
+          </div>
+        </section>
+
+        <section class="panel" id="panel-alerts">
+          <div class="placeholder-card">
+            <h3>Alerts UI scaffolded</h3>
+            <p>Threshold and anomaly alert delivery are not implemented in the backend yet, so this view remains informational.</p>
+          </div>
+        </section>
+      </section>
     </section>
   </main>
-  <script src="/assets/app.js"></script>
+  <script src="/assets/app.js?v=20260408b"></script>
 </body>
 </html>

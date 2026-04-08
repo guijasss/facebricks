@@ -41,6 +41,20 @@ class JobCostSummary:
 
 
 @dataclass(frozen=True)
+class NamedCostSummary:
+    key: str
+    label: str
+    currency: str
+    total_cost: float
+    cost_share: float
+    run_count: int
+    avg_cost_per_run: float
+    cost_per_day: float
+    attribution_count: int
+    last_seen_time: Optional[int] = None
+
+
+@dataclass(frozen=True)
 class CostInsight:
     kind: str
     subject_type: str
@@ -56,4 +70,6 @@ class FinOpsReport:
     total_cost: float
     run_costs: List[RunCost]
     job_summaries: List[JobCostSummary]
+    pipeline_summaries: List[NamedCostSummary]
+    table_summaries: List[NamedCostSummary]
     insights: List[CostInsight]

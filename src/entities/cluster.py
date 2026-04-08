@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from .cluster_spec import Autoscale
+from src.entities.cluster_spec import Autoscale
 
 
 @dataclass(frozen=True)

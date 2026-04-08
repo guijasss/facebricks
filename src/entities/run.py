@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-from .cluster_instance import ClusterInstance
-from .cluster_spec import ClusterSpec
-from .run_state import RunState
+from src.entities.cluster_instance import ClusterInstance
+from src.entities.cluster_spec import ClusterSpec
+from src.entities.run_state import RunState
 
 
 @dataclass(frozen=True)

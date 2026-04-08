@@ -1,6 +1,15 @@
 import unittest
 
-from src.entities import Autoscale, Cluster, ClusterInstance, ClusterSpec, Job, Run
+from src.entities import (
+    Autoscale,
+    Cluster,
+    ClusterInstance,
+    ClusterSpec,
+    Job,
+    JobClusterSpec,
+    JobTask,
+    Run,
+)
 from src.finops import FinOpsAnalyzer, FinOpsConfig, PricingRate
 
 
@@ -55,8 +64,15 @@ class FinOpsAnalyzerTest(unittest.TestCase):
             config=FinOpsConfig(expensive_job_share_threshold=0.30, top_n_insights=2),
         )
         jobs = [
-            Job(job_id=1, name="bronze-refresh"),
-            Job(job_id=2, name="gold-aggregate"),
+            Job(
+                job_id=1,
+                name="bronze-refresh",
+                tags={
+                    "pipeline": "ingestion",
+                    "tables": "bronze.events,bronze.orders",
+                },
+            ),
+            Job(job_id=2, name="gold-aggregate", tags={"pipeline": "serving"}),
         ]
         runs = [
             Run(
@@ -79,10 +95,11 @@ class FinOpsAnalyzerTest(unittest.TestCase):
                 start_time=3_000,
                 duration_ms=3_600_000,
                 cluster_spec=ClusterSpec(node_type_id="m5d.large", num_workers=1),
+                tags={"tables": "gold.orders"},
             ),
         ]
 
-        report = analyzer.build_report(jobs=jobs, runs=runs)
+        report = analyzer.build_report(jobs=jobs, runs=runs, analysis_window_days=10)
 
         self.assertAlmostEqual(report.total_cost, 7.0)
         self.assertEqual([summary.job_id for summary in report.job_summaries], [1, 2])
@@ -90,7 +107,15 @@ class FinOpsAnalyzerTest(unittest.TestCase):
         self.assertAlmostEqual(report.job_summaries[0].cost_share, 5 / 7)
         self.assertAlmostEqual(report.job_summaries[0].avg_cost_per_run, 2.5)
         self.assertEqual(report.job_summaries[0].last_run_time, 2_000)
+        self.assertEqual(report.pipeline_summaries[0].label, "ingestion")
+        self.assertAlmostEqual(report.pipeline_summaries[0].total_cost, 5.0)
+        self.assertTrue(any(summary.label == "gold.orders" for summary in report.table_summaries))
+        gold_orders = next(
+            summary for summary in report.table_summaries if summary.label == "gold.orders"
+        )
+        self.assertAlmostEqual(gold_orders.cost_per_day, 0.2)
         self.assertTrue(any(insight.kind == "dominant_cost_share" for insight in report.insights))
+        self.assertTrue(any(insight.kind == "expensive_table" for insight in report.insights))
 
     def test_autoscale_average_is_used_by_default(self) -> None:
         analyzer = FinOpsAnalyzer(
@@ -111,6 +136,53 @@ class FinOpsAnalyzerTest(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertAlmostEqual(result.billable_nodes, 5.0)
         self.assertAlmostEqual(result.estimated_cost, 10.0)
+
+    def test_estimate_run_cost_accounts_for_distinct_driver_pricing(self) -> None:
+        analyzer = FinOpsAnalyzer(
+            pricing_rates=[
+                PricingRate(node_type_id="worker.large", dbu_rate_per_hour=1.0),
+                PricingRate(node_type_id="driver.large", dbu_rate_per_hour=3.0),
+            ]
+        )
+        run = Run(
+            run_id=13,
+            job_id=4,
+            duration_ms=3_600_000,
+            cluster_spec=ClusterSpec(
+                node_type_id="worker.large",
+                driver_node_type_id="driver.large",
+                num_workers=2,
+            ),
+        )
+
+        result = analyzer.estimate_run_cost(run)
+
+        self.assertIsNotNone(result)
+        self.assertAlmostEqual(result.hourly_rate, 5.0)
+        self.assertAlmostEqual(result.estimated_cost, 5.0)
+
+    def test_estimate_run_cost_falls_back_to_single_job_cluster_definition(self) -> None:
+        analyzer = FinOpsAnalyzer(
+            pricing_rates=[PricingRate(node_type_id="m5d.large", dbu_rate_per_hour=1.0)]
+        )
+        job = Job(
+            job_id=5,
+            name="job-cluster-backed",
+            tasks=[JobTask(task_key="main", cluster_ref="etl")],
+            job_clusters=[
+                JobClusterSpec(
+                    job_cluster_key="etl",
+                    new_cluster=ClusterSpec(node_type_id="m5d.large", num_workers=1),
+                )
+            ],
+        )
+        run = Run(run_id=14, job_id=5, duration_ms=3_600_000)
+
+        result = analyzer.estimate_run_cost(run, job=job)
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result.source, "job.job_clusters")
+        self.assertAlmostEqual(result.estimated_cost, 2.0)
 
 
 if __name__ == "__main__":

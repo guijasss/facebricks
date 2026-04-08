@@ -1,5 +1,12 @@
-from .analyzer import FinOpsAnalyzer, FinOpsConfig
-from .models import CostInsight, FinOpsReport, JobCostSummary, PricingRate, RunCost
+from src.finops.analyzer import FinOpsAnalyzer, FinOpsConfig
+from src.finops.models import (
+    CostInsight,
+    FinOpsReport,
+    JobCostSummary,
+    NamedCostSummary,
+    PricingRate,
+    RunCost,
+)
 
 __all__ = [
     "CostInsight",
@@ -7,6 +14,7 @@ __all__ = [
     "FinOpsConfig",
     "FinOpsReport",
     "JobCostSummary",
+    "NamedCostSummary",
     "PricingRate",
     "RunCost",
 ]
